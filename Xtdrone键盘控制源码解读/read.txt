@@ -1,0 +1,92 @@
+这段代码是用于处理来自 `/xtdrone/` 主题的命令消息，根据接收到的命令执行相应的操作，主要包括无人机的上锁、解锁以及模式切换。以下是详细的注释：
+
+```python
+# 创建一个 ROS 服务代理对象，用于调用无人机模式切换的服务
+self.flightModeService = rospy.ServiceProxy(self.vehicle_type+'_'+self.vehicle_id+"/mavros/set_mode", SetMode)
+
+# 处理来自 /xtdrone/ 主题的命令消息
+def cmd_callback(self, msg):
+    # 无消息时，直接返回
+    if msg.data == '':
+        return
+
+    # 无人机解锁
+    elif msg.data == 'ARM':
+        # 调用 arm 方法执行解锁操作，并更新 arm_state 变量
+        self.arm_state = self.arm()  # True
+        print(self.vehicle_type+'_'+self.vehicle_id+": Armed "+str(self.arm_state))
+
+    # 无人机上锁
+    elif msg.data == 'DISARM':
+        # 调用 disarm 方法执行上锁操作，并更新 arm_state 变量
+        self.arm_state = not self.disarm()  # not True
+        print(self.vehicle_type+'_'+self.vehicle_id+": Armed "+str(self.arm_state))
+
+    # 处理任务命令
+    elif msg.data[:-1] == "mission" and not msg.data == self.mission:
+        self.mission = msg.data
+        print(self.vehicle_type+'_'+self.vehicle_id+": "+msg.data)
+
+    # 处理无人机模式切换
+    elif not msg.data == self.flight_mode:
+        self.flight_mode = msg.data
+        self.flight_mode_switch()
+
+# 无人机模式切换方法
+def flight_mode_switch(self):
+    # 如果命令为 HOVER，则执行悬停操作
+    if self.flight_mode == 'HOVER':
+        self.hover_flag = 1
+        self.hover()
+        print(self.vehicle_type+'_'+self.vehicle_id+":"+self.flight_mode)
+    # 否则，调用 ROS 服务切换无人机模式
+    elif self.flightModeService(custom_mode=self.flight_mode):
+        print(self.vehicle_type+'_'+self.vehicle_id+": "+self.flight_mode)
+        return True
+    else:
+        print(self.vehicle_type+'_'+self.vehicle_id+": "+self.flight_mode+" failed")
+        return False
+```
+
+注释：
+
+1. `self.flightModeService = rospy.ServiceProxy(self.vehicle_type+'_'+self.vehicle_id+"/mavros/set_mode", SetMode)`：
+   - 创建一个 ROS 服务代理对象，该对象可以调用 `/mavros/set_mode` 服务，使用 `SetMode` 消息类型。
+
+2. `def cmd_callback(self, msg):`：
+   - 处理命令消息的回调函数。
+
+3. `if msg.data == '':`：
+   - 如果接收到的命令消息为空，则直接返回，不执行任何操作。
+
+4. `elif msg.data == 'ARM':`：
+   - 如果接收到的命令是 'ARM'，则执行解锁操作，调用 `arm` 方法。
+
+5. `elif msg.data == 'DISARM':`：
+   - 如果接收到的命令是 'DISARM'，则执行上锁操作，调用 `disarm` 方法。
+
+6. `elif msg.data[:-1] == "mission" and not msg.data == self.mission:`：
+   - 如果接收到的命令是任务相关的命令，则更新任务变量 `self.mission`。
+
+7. `elif not msg.data == self.flight_mode:`：
+   - 如果接收到的命令不同于当前的飞行模式，则更新飞行模式变量 `self.flight_mode` 并调用 `flight_mode_switch` 方法。
+
+8. `def flight_mode_switch(self):`：
+   - 处理无人机模式切换的方法。
+
+9. `if self.flight_mode == 'HOVER':`：
+   - 如果命令为 'HOVER'，则执行悬停操作。
+
+10. `elif self.flightModeService(custom_mode=self.flight_mode):`：
+    - 否则，调用 ROS 服务切换无人机模式。
+
+11. `else:`：
+    - 如果切换模式失败，打印错误信息。
+
+
+明确每一个文件需要接收、发布哪些消息
+把这个逻辑弄清楚即可
+
+可以简化这个过程 键盘发布消息-->通信脚本-->PX4
+
+
